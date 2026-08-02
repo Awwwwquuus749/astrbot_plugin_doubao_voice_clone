@@ -1,0 +1,2 @@
+# astrbot_plugin_doubao_voice_clone
+AstrBot 豆包语音tts插件
