@@ -1,0 +1,5 @@
+name: astrbot_plugin_doubao_voice_clone
+desc: 基于火山引擎豆包声音复刻大模型2.0的语音合成插件，支持声音复刻 + TTS 合成
+author: Awwwwquuus749
+version: 0.1.0
+repo: https://github.com/Awwwwquuus749/astrbot_plugin_doubao_voice_clone

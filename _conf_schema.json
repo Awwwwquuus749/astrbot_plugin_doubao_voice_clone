@@ -1,0 +1,267 @@
+{
+  "tts_settings": {
+    "description": "TTS 核心配置",
+    "hint": "火山引擎豆包语音合成的核心参数：鉴权、音色、音频格式等",
+    "type": "object",
+    "items": {
+      "volcengine_api_key": {
+        "description": "火山引擎 API Key（新版控制台）",
+        "type": "string",
+        "hint": "从火山引擎控制台 > 语音技术 > API Key管理 获取",
+        "obvious_hint": true,
+        "default": ""
+      },
+      "api_base_url": {
+        "description": "API 基础地址（可选，留空使用内置默认）",
+        "type": "string",
+        "hint": "留空使用内置默认地址 https://openspeech.bytedance.com。填写后使用自定义基础地址（如代理地址），合成/训练/查询三个接口都会基于此地址拼接。一般无需修改",
+        "default": ""
+      },
+      "speaker_id": {
+        "description": "音色 ID (speaker_id)",
+        "type": "string",
+        "hint": "从控制台 > 音色库获取，或通过声音复刻训练后获得。格式如 S_xxxx 或 icl_xxxx",
+        "default": ""
+      },
+      "resource_id": {
+        "description": "TTS 资源模型版本",
+        "type": "string",
+        "hint": "seed-icl-2.0=声音复刻2.0（推荐，用复刻音色）；seed-tts-2.0=语音合成2.0（用系统音色，支持语音指令）",
+        "options": ["seed-icl-2.0", "seed-tts-2.0"],
+        "default": "seed-icl-2.0"
+      },
+      "tts_model": {
+        "description": "声音复刻模型版本（仅 seed-icl-2.0 生效）",
+        "type": "string",
+        "hint": "留空=standard标准版(延时更优，不支持语音指令)；seed-tts-2.0-expressive=表现力增强版(支持语音指令和语音标签，存在效果抽卡) 来源于https://docs.volcengine.com/docs/6561/1598757中的2.2 请求Body 项",
+        "options": ["", "seed-tts-2.0-standard", "seed-tts-2.0-expressive"],
+        "default": ""
+      },
+      "audio_format": {
+        "description": "音频编码格式",
+        "type": "string",
+        "hint": "mp3=默认通用；ogg_opus=更小体积；pcm=无压缩原始数据；wav=无压缩(流式下建议用pcm)",
+        "options": ["mp3", "ogg_opus", "pcm", "wav"],
+        "default": "mp3"
+      },
+      "sample_rate": {
+        "description": "音频采样率 (Hz)",
+        "type": "int",
+        "hint": "24000=默认推荐；其他可选 8000/16000/22050/32000/44100/48000",
+        "options": [8000, 16000, 22050, 24000, 32000, 44100, 48000],
+        "default": 24000
+      },
+      "speech_rate": {
+        "description": "语速",
+        "type": "int",
+        "hint": "取值范围 [-50, 100]，0=正常语速，100=2倍速，-50=0.5倍速",
+        "default": 0
+      },
+      "loudness_rate": {
+        "description": "音量",
+        "type": "int",
+        "hint": "取值范围 [-50, 100]，0=正常音量，100=2倍音量，-50=0.5倍音量",
+        "default": 0
+      },
+      "explicit_language": {
+        "description": "明确朗读语种（仅支持字符串，不能填数字）",
+        "type": "string",
+        "hint": "留空=中英混读。一般不用刻意填。指定后仅朗读该语种文本。注意：训练接口的语种数字编码(0/1/2)不适用于本配置",
+        "options": ["", "zh-cn", "en", "ja", "ko", "es-mx", "id", "pt-br", "pt", "it", "de", "fr", "th", "vi", "ru", "fil", "ms", "ar", "pl", "tr", "sv"],
+        "default": ""
+      },
+      "tone_fidelity": {
+        "description": "开启还原模式（仅声音复刻2.0生效）",
+        "type": "bool",
+        "hint": "开启后尽可能还原训练音频的音色和说话风格。注意：仅支持合成与训练同语种的文本，不支持跨语种合成",
+        "default": false
+      }
+    }
+  },
+  "context_settings": {
+    "description": "多轮上下文",
+    "hint": "按会话配置 section_id，实现多轮合成的语义保持。TTS 2.0 和声音复刻 2.0 都支持",
+    "type": "object",
+    "items": {
+      "enable_context": {
+        "description": "启用多轮上下文",
+        "type": "bool",
+        "hint": "总开关。关闭后即使配置了下方映射表也不传 section_id（无上下文）。开启后按映射表查会话对应的 section_id",
+        "default": false
+      },
+      "section_id_map": {
+        "description": "会话-上下文映射表",
+        "type": "list",
+        "hint": "每项格式「会话标识|section_id」，会话标识用 AstrBot 的 session_id（如 default:GroupMessage:123456789）。示例：default:GroupMessage:123456789|bf5b5771-31cd-4f7a-b30c-f4ddcbf2f9da。命中则传对应 section_id，未命中则不传上下文",
+        "default": [],
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "instruction_settings": {
+    "description": "指令控制（QA / Cot 双模式）",
+    "hint": "调用大模型判断情感语气，生成语音指令。需配合 seed-tts-2.0 或 seed-tts-2.0-expressive 使用",
+    "type": "object",
+    "items": {
+      "instruction_mode": {
+        "description": "指令控制模式",
+        "type": "string",
+        "hint": "none=关闭；qa=context_texts 语音指令(全局语气控制，大模型返回一句指令作用于整次合成)；cot=use_tag_parser 语音标签(句子级控制，按分词切分后大模型逐片返回情感词填入 <cot text=> 标签)",
+        "options": ["none", "qa", "cot"],
+        "default": "none"
+      },
+      "instruction_api_base_url": {
+        "description": "指令控制大模型的 API 请求地址",
+        "type": "string",
+        "hint": "需兼容 OpenAI Chat API 格式，例如 https://api.openai.com/v1，也可填写完整 /chat/completions 地址。与模型名、API Key 三项缺一不可",
+        "default": ""
+      },
+      "instruction_model_name": {
+        "description": "指令控制大模型的模型名称",
+        "type": "string",
+        "hint": "例如 gpt-4o-mini, Qwen/Qwen2.5-7B-Instruct 等",
+        "default": ""
+      },
+      "instruction_api_key": {
+        "description": "指令控制大模型的 API Key",
+        "type": "string",
+        "hint": "与请求地址、模型名三项缺一不可",
+        "obvious_hint": true,
+        "default": ""
+      },
+      "instruction_text_source": {
+        "description": "QA 模式交给大模型判断的文本来源",
+        "type": "string",
+        "hint": "full=完整输出文本(LLM原始回复，未过滤)；filtered=过滤后的输出文本(经本地过滤+大模型过滤+翻译后)。仅 QA 模式生效，Cot 模式固定用 filtered",
+        "options": ["full", "filtered"],
+        "default": "filtered"
+      },
+      "cot_splitters": {
+        "description": "Cot 分词规则（用 - 分隔的标点）",
+        "type": "string",
+        "hint": "Cot 模式按这些标点切分文本并逐片打标签。用 - 分隔，默认 。-！-？。留空回退默认值。单句超过 64 字符的片段会跳过打标签",
+        "default": "。-！-？"
+      }
+    }
+  },
+  "text_filter_settings": {
+    "description": "本地文本过滤",
+    "hint": "纯本地处理，零延迟，不走 LLM。用于删除/替换指定字符或括号内容",
+    "type": "object",
+    "items": {
+      "remove_brackets": {
+        "description": "启用括号过滤",
+        "type": "bool",
+        "hint": "删除中英文圆括号（）() 和方括号【】[] 内的所有内容（如动作描写）",
+        "default": false
+      },
+      "filter_chars": {
+        "description": "要过滤的字符",
+        "type": "string",
+        "hint": "多个词用逗号或空格分隔。例如：嗯，啊，呃，那个，这个。留空则不启用过滤",
+        "default": ""
+      },
+      "filter_replacement": {
+        "description": "过滤字符替换为",
+        "type": "string",
+        "hint": "留空=删除过滤词；填空格=替换为空格；填*=替换为星号",
+        "default": ""
+      }
+    }
+  },
+  "llm_filter_settings": {
+    "description": "大模型过滤",
+    "hint": "调用 LLM API 按 System Prompt 智能过滤文本（如删除动作描写）。与本地过滤互补。请求地址、模型名、API Key 三项缺一不可",
+    "type": "object",
+    "items": {
+      "llm_filter_api_base_url": {
+        "description": "大模型过滤的 API 请求地址",
+        "type": "string",
+        "hint": "需兼容 OpenAI Chat API 格式，例如 https://api.openai.com/v1，也可填写完整 /chat/completions 地址",
+        "default": ""
+      },
+      "llm_filter_model_name": {
+        "description": "大模型过滤的模型名称",
+        "type": "string",
+        "hint": "例如 gpt-4o-mini, Qwen/Qwen2.5-7B-Instruct 等",
+        "default": ""
+      },
+      "llm_filter_api_key": {
+        "description": "大模型过滤的 API Key",
+        "type": "string",
+        "hint": "与请求地址、模型名三项缺一不可",
+        "obvious_hint": true,
+        "default": ""
+      },
+      "llm_filter_system_prompt": {
+        "description": "大模型过滤的 System Prompt",
+        "type": "text",
+        "hint": "作为 System Prompt 发送给大模型，指导其如何过滤文本。默认已填入，可按需修改。插件会自动追加硬约束强制「只删不改」",
+        "default": "请把下面的文本中的动作描写全部删掉，不要说多余的话"
+      }
+    }
+  },
+  "translate_settings": {
+    "description": "翻译",
+    "hint": "调用 LLM API 将文本翻译为目标语种，让 TTS 文本语种与 explicit_language 一致。留空则不启用",
+    "type": "object",
+    "items": {
+      "translate_api_base_url": {
+        "description": "翻译模型的 API 请求地址",
+        "type": "string",
+        "hint": "需兼容 OpenAI Chat API 格式，例如 https://api.openai.com/v1，也可填写完整 /chat/completions 地址",
+        "default": ""
+      },
+      "translate_api_key": {
+        "description": "翻译模型的 API Key",
+        "type": "string",
+        "hint": "留空则不需要认证",
+        "obvious_hint": true,
+        "default": ""
+      },
+      "translate_model_name": {
+        "description": "翻译模型的模型名称",
+        "type": "string",
+        "hint": "例如 gpt-4o-mini, Qwen/Qwen2.5-7B-Instruct 等",
+        "default": ""
+      },
+      "translate_prompt": {
+        "description": "翻译提示词（目标语种）",
+        "type": "string",
+        "hint": "例如「翻译成英文」「翻译成日语」，留空则不启用翻译",
+        "default": ""
+      }
+    }
+  },
+  "audio_management": {
+    "description": "音频文件管理",
+    "hint": "控制合成音频文件的保留时长和清理策略",
+    "type": "object",
+    "items": {
+      "audio_retention_minutes": {
+        "description": "音频文件保留时长（分钟）",
+        "type": "int",
+        "hint": "-1=不自动清理；60=仅保留最近60分钟；1440=仅保留最近24小时",
+        "default": -1
+      }
+    }
+  },
+  "whitelist": {
+    "description": "白名单",
+    "hint": "只有在列表中的用户或群组才会触发语音。空数组表示全员可触发",
+    "type": "object",
+    "items": {
+      "whitelist": {
+        "description": "白名单列表",
+        "type": "list",
+        "hint": "填入用户或群组的 ID。空数组表示全员可触发",
+        "default": [],
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
